@@ -1,0 +1,51 @@
+---
+title: "p8105_hw6_hy2912"
+author: "Helen Yousaf"
+date: "2024-11-28"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(broom)
+library(purrr)
+library(ggplot2)
+library(here)
+```
+
+```{r}
+# Load the data
+
+data <- read.csv("/Users/helenyousaf/Desktop/p8105_hw6_hy2912/homicide.data.csv")
+
+# Create city_state variable and binary solved variable
+data <- data %>%
+  mutate(city_state = paste(city, state, sep = ", "),
+         solved = ifelse(grepl("^closed", disposition), 1, 0))
+```
+
+```{r}
+data <- data|>
+  filter(!city_state %in% c("Dallas, TX", "Phoenix, AZ", "Kansas City, MO", "Tulsa, AL"),
+         victim_race %in% c("White", "Black"),
+         victim_age == as.numeric(victim_age))
+```
+```{r}
+# Fit logistic regression for Baltimore, MD
+baltimore_model <- glm(solved ~ victim_age + victim_sex + victim_race, data = data %>% filter(city_state == "Baltimore, MD"), family = binomial)
+baltimore_results <- broom::tidy(baltimore_model)
+
+# Extract adjusted odds ratio and confidence interval for male vs female
+baltimore_or <- baltimore_results %>%
+  filter(term == "sexmale") %>%
+  mutate(OR = exp(estimate),
+         lower_ci = exp(estimate - 1.96 * std.error),
+         upper_ci = exp(estimate + 1.96 * std.error))
+```
+
+
+
+
+
+
+
