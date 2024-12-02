@@ -4,7 +4,7 @@ author: "Helen Yousaf"
 date: "2024-11-28"
 output: html_document
 ---
-
+Problem 2 
 ```{r}
 library(dplyr)
 library(broom)
@@ -70,6 +70,54 @@ ggplot(city_results, aes(x = reorder(city_state, OR), y = OR)) +
   theme_minimal()
 ```
 
+Problem 3 
+
+```{r}
+library(tidyverse)
+library(broom)
+library(ggplot2)
+library(purrr)
+
+# Load the dataset
+birth_data <- read.csv("/Users/helenyousaf/Desktop/p8105_hw6_hy2912/birthweight.csv")
+
+# Clean the data
+birth_data <- birth_data %>%
+  mutate(across(c(babysex, frace, mrace), as.factor)) %>%
+  drop_na()
+
+# Proposed regression model for birthweight
+model1 <- lm(bwt ~ bhead + blength + delwt + fincome + frace + gaweeks + malform + 
+              menarche + mheight + momage + mrace + parity + pnumlbw + 
+              pnumsga + ppbmi + ppwt + smoken + wtgain, data = birth_data)
+
+# Residuals vs Fitted plot
+birth_data <- birth_data %>%
+  modelr::add_predictions(model1) |>
+  modelr::add_residuals(model1) 
+
+ggplot(birth_data, aes(x = pred, y = resid)) +
+  geom_point() +
+  geom_smooth(method = "loess") +
+  labs(title = "Residuals vs Fitted Values", x = "Fitted Values", y = "Residuals")
+
+# Model 2: Length at birth and gestational age as predictors
+model2 <- lm(bwt ~ blength + gaweeks, data = birth_data)
+
+# Model 3: Head circumference, length, sex, and all interactions
+model3 <- lm(bwt ~ bhead * blength * babysex, data = birth_data)
+
+error_model1 <- cv_results(model1, birth_data)
+error_model2 <- cv_results(model2, birth_data)
+error_model3 <- cv_results(model3, birth_data)
+
+comparison <- tibble(
+  Model = c("Model 1", "Model 2", "Model 3"),
+  RMSE = c(error_model1, error_model2, error_model3)
+)
+
+print(comparison)
+```
 
 
 
