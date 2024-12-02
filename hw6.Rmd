@@ -11,6 +11,10 @@ library(broom)
 library(purrr)
 library(ggplot2)
 library(here)
+library(modelr)
+library(mgcv)
+library(tidyverse)
+library(tidytext)
 ```
 
 ```{r}
@@ -41,6 +45,29 @@ baltimore_or <- baltimore_results %>%
   mutate(OR = exp(estimate),
          lower_ci = exp(estimate - 1.96 * std.error),
          upper_ci = exp(estimate + 1.96 * std.error))
+```
+```{r}
+# Run glm for each city and extract ORs and CIs
+city_results <- data %>%
+  group_by(city_state) %>%
+  nest() %>%
+  mutate(model = map(data, ~ glm(solved ~ victim_age + victim_sex + victim_race, data = ., family = binomial)),
+         tidy_results = map(model, broom::tidy)) %>%
+  unnest(tidy_results) %>%
+  filter(term == "sexmale") %>%
+  mutate(OR = exp(estimate),
+         lower_ci = exp(estimate - 1.96 * std.error),
+         upper_ci = exp(estimate + 1.96 * std.error))
+
+# Create a plot of estimated ORs and CIs for each city
+ggplot(city_results, aes(x = reorder(city_state, OR), y = OR)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci), width = 0.2) +
+  coord_flip() +
+  labs(title = "Estimated Odds Ratios for Solving Homicides: Male vs Female Victims",
+       x = "City",
+       y = "Odds Ratio (OR)") +
+  theme_minimal()
 ```
 
 
